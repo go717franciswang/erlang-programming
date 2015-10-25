@@ -1,0 +1,38 @@
+-module(e8).
+-export([parser/1]).
+
+extract_entities([$~ | Operand]) -> { negate, Operand };
+extract_entities([$( | T]) -> extract_entities([$( | T], 0, {}, []);
+extract_entities(N) -> { num, list_to_integer(N) }.
+
+extract_entities(Expressions, Parens, Entities, EntityAccu) ->
+    case Expressions of
+        [] -> Entities;
+        [$( | T] when Parens == 0 -> 
+            extract_entities(T, 1, Entities, EntityAccu);
+        [$( | T] -> 
+            extract_entities(T, Parens+1, Entities, EntityAccu++[$(]);
+        [$) | _T] when Parens == 1 -> 
+            erlang:append_element(Entities, EntityAccu);
+        [$) | T] -> 
+            extract_entities(T, Parens-1, Entities, EntityAccu++[$)]);
+        [$+ | T] when Parens == 1 -> 
+            extract_entities(T, Parens, erlang:append_element(erlang:append_element(Entities, EntityAccu), plus), []);
+        [$- | T] when Parens == 1 -> 
+            extract_entities(T, Parens, erlang:append_element(erlang:append_element(Entities, EntityAccu), minus), []);
+        [$* | T] when Parens == 1 -> 
+            extract_entities(T, Parens, erlang:append_element(erlang:append_element(Entities, EntityAccu), multiply), []);
+        [$/ | T] when Parens == 1 -> 
+            extract_entities(T, Parens, erlang:append_element(erlang:append_element(Entities, EntityAccu), divide), []);
+        [H | T] -> extract_entities(T, Parens, Entities, EntityAccu++[H])
+    end.
+
+
+parser(Expressions) ->
+    case extract_entities(Expressions) of
+        { num, N } -> { num, N };
+        { Operator, Operand } -> { Operator, parser(Operand) };
+        { Operand1, Operator, Operand2 } -> 
+            { Operator, parser(Operand1), parser(Operand2) }
+    end.
+
