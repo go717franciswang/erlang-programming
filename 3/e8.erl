@@ -1,6 +1,8 @@
 -module(e8).
 -export([parser/1, evaluator/1, compiler/1, simulator/1, simplifier/1]).
 
+% missing conditional and local definition extensions
+
 extract_entities([$~ | Operand]) -> { negate, Operand };
 extract_entities([$( | T]) -> extract_entities([$( | T], 0, {}, []);
 extract_entities(N) -> { num, list_to_integer(N) }.
@@ -85,5 +87,4 @@ simplifier(Operations) ->
         { num, A } -> { num, A };
         { Operator, A, B } -> { Operator, simplifier(A), simplifier(B) }
     end.
-
 
