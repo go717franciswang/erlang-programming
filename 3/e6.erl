@@ -15,6 +15,13 @@ quicksort(List) ->
     {L, M, R} = separate(List, hd(List)),
     quicksort(L) ++ M ++ quicksort(R).
 
+% using list comprehension: http://www.erlang.org/doc/programming_examples/list_comprehensions.html
+% sort([Pivot|T]) ->
+%     sort([ X || X <- T, X < Pivot]) ++
+%     [Pivot] ++
+%     sort([ X || X <- T, X >= Pivot]);
+% sort([]) -> [].
+
 merge([], R) -> R;
 merge(L, []) -> L;
 merge([H1|T1], [H2|T2]) ->
