@@ -1,5 +1,5 @@
 -module(e8).
--export([parser/1]).
+-export([parser/1, evaluator/1, compiler/1, simulator/1]).
 
 extract_entities([$~ | Operand]) -> { negate, Operand };
 extract_entities([$( | T]) -> extract_entities([$( | T], 0, {}, []);
@@ -36,3 +36,38 @@ parser(Expressions) ->
             { Operator, parser(Operand1), parser(Operand2) }
     end.
 
+evaluator(Operations) ->
+    case Operations of
+        { num, N } -> N;
+        { negate, A } -> -evaluator(A);
+        { plus, A, B } -> evaluator(A) + evaluator(B);
+        { minus, A, B } -> evaluator(A) - evaluator(B);
+        { multiply, A, B } -> evaluator(A) * evaluator(B);
+        { divide, A, B } -> evaluator(A) / evaluator(B)
+    end.
+
+compiler(Operations) ->
+    case Operations of
+        { num, N } -> [N];
+        { negate, A } -> compiler(A) ++ [ negate ];
+        { Operator, A, B } -> compiler(A) ++ compiler(B) ++ [ Operator ]
+    end.
+
+simulator(Instructions) -> simulator(Instructions, []).
+simulator(Instructions, Stack) ->
+    case Instructions of
+        [] -> hd(Stack);
+        [N | T] when is_integer(N) -> simulator(T, [N | Stack]);
+        [negate | T] ->
+            [N1 | NT] = Stack,
+            simulator(T, [-N1 | NT]);
+        [Operator | T] ->
+            [N1, N2 | NT] = Stack,
+            N3 = case Operator of
+                plus -> N1 + N2;
+                minus -> N1 - N2;
+                multiply -> N1 * N2;
+                divide -> N1 / N2
+            end,
+            simulator(T, [N3 | NT])
+    end.
