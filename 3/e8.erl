@@ -1,5 +1,5 @@
 -module(e8).
--export([parser/1, evaluator/1, compiler/1, simulator/1]).
+-export([parser/1, evaluator/1, compiler/1, simulator/1, simplifier/1]).
 
 extract_entities([$~ | Operand]) -> { negate, Operand };
 extract_entities([$( | T]) -> extract_entities([$( | T], 0, {}, []);
@@ -71,3 +71,19 @@ simulator(Instructions, Stack) ->
             end,
             simulator(T, [N3 | NT])
     end.
+
+simplifier(Operations) ->
+    case Operations of
+        { multiply, { num, 0 }, _ } -> { num, 0 };
+        { multiply, _, { num, 0 } } -> { num, 0 };
+        { multiply, { num, 1 }, B } -> simplifier(B);
+        { multiply, A, { num, 1 } } -> simplifier(A);
+        { plus, { num, 0 }, B } -> simplifier(B);
+        { plus, A, { num, 0 } } -> simplifier(A);
+        { minus, A, { num, 0 } } -> simplifier(A);
+        { negate, A } -> { negate, simplifier(A) };
+        { num, A } -> { num, A };
+        { Operator, A, B } -> { Operator, simplifier(A), simplifier(B) }
+    end.
+
+
