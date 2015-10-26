@@ -30,11 +30,16 @@ loop(Frequencies) ->
             reply(Pid, Reply),
             loop(NewFrequencies);
         {request, Pid, {deallocate, Freq}} -> 
-            NewFrequencies = deallocate(Frequencies, Freq),
-            reply(Pid, ok),
+            {NewFrequencies, Reply} = deallocate(Frequencies, Freq, Pid),
+            reply(Pid, Reply),
             loop(NewFrequencies);
         {request, Pid, stop} ->
-            reply(Pid, ok)
+            case length(element(2, Frequencies)) of
+                0 -> reply(Pid, ok);
+                _ -> 
+                    reply(Pid, {error, existing_allocated_freq}),
+                    loop(Frequencies)
+            end
     end.
 
 reply(Pid, Reply) -> Pid ! {reply, Reply}.
@@ -42,7 +47,24 @@ reply(Pid, Reply) -> Pid ! {reply, Reply}.
 allocate({[], Allocated}, _Pid) ->
     {{[], Allocated}, {error, no_frequency}};
 allocate({[Freq|Free], Allocated}, Pid) ->
-    {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}}.
-deallocate({Free, Allocated}, Freq) ->
-    NewAllocated=lists:keydelete(Freq, 1, Allocated),
-    {[Freq|Free], NewAllocated}.
+    case allocated_count(Allocated, Pid) of
+        Count when Count < 3 -> {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}};
+        _ -> {{[Freq|Free], Allocated}, {error, cannot_allocate_more_than_three}}
+    end.
+
+allocated_count(Allocated, Pid) -> allocated_count(Allocated, Pid, 0).
+allocated_count([], _Pid, Acc) -> Acc;
+allocated_count([{_Freq, Pid0}|Allocated], Pid, Acc) ->
+    case Pid0 of
+        Pid -> allocated_count(Allocated, Pid, Acc+1);
+        _ -> allocated_count(Allocated, Pid, Acc)
+    end.
+
+deallocate({Free, Allocated}, Freq, Pid) ->
+    case lists:keyfind(Freq, 1, Allocated) of
+        false -> {{Free, Allocated}, {error, key_not_allocated}};
+        {Freq, Pid} ->
+            NewAllocated=lists:keydelete(Freq, 1, Allocated),
+            {{[Freq|Free], NewAllocated}, ok};
+        {Freq, _Pid} -> {{Free, Allocated}, {error, freq_does_not_belong_to_pid}}
+    end.
