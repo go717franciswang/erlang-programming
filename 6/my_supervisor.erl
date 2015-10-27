@@ -21,7 +21,7 @@ start_children([]) -> [];
 start_children([{M, F, A, Type} | ChildSpecList]) ->
     case (catch apply(M,F,A)) of
         {ok, Pid} ->
-            [{Pid, {M,F,A,Type}}|start_children(ChildSpecList)];
+            [{Pid, {M,F,A,Type,[]}}|start_children(ChildSpecList)];
         _ ->
             start_children(ChildSpecList)
     end.
@@ -31,14 +31,27 @@ start_children([{M, F, A, Type} | ChildSpecList]) ->
 %% child, replacing its entry in the list of children stored in the ChildList variable:
 
 restart_child(Pid, ChildList) ->
-    {value, {Pid, {M,F,A,Type}}} = lists:keysearch(Pid, 1, ChildList),
+    {value, {Pid, {M,F,A,Type,RestartTs}}} = lists:keysearch(Pid, 1, ChildList),
     NewChildList = lists:keydelete(Pid,1,ChildList),
     case Type of
          transient -> NewChildList;
          permanent -> 
-            {ok, NewPid} = apply(M,F,A),
-            [{NewPid, {M,F,A,Type}}|NewChildList]
+            NewRestartTs = keep_within_60_seconds(RestartTs),
+            if 
+                length(NewRestartTs) >= 5 ->
+                    io:format("Stopped restarting ~w:~w after 5 restarts in 1 minute", [M, F]),
+                    NewChildList;
+                true ->
+                    {ok, NewPid} = apply(M,F,A),
+                    [{NewPid, {M,F,A,Type,[ts()|NewRestartTs]}}|NewChildList]
+            end
     end.
+
+ts() ->
+    calendar:datetime_to_gregorian_seconds({date(), time()}).
+
+keep_within_60_seconds(RestartTs) ->
+    [X || X <- RestartTs, X > ts()-60].
 
 loop(ChildList) ->
     receive
