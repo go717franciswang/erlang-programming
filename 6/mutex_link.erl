@@ -4,7 +4,8 @@
 -export([init/0]).
 
 start() ->
-    register(mutex, spawn(mutex_link, init, [])).
+    register(mutex, Pid=spawn_link(mutex_link, init, [])),
+    {ok, Pid}.
 
 stop() ->
     mutex ! stop.
