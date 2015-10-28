@@ -7,19 +7,16 @@ new() -> [].
 destroy(_Db) -> 0.
 
 read(Key, Db) ->
-    case lists:keyfind(Key, 2, Db) of
+    case lists:keyfind(Key, #data.key, Db) of
         false -> { error, instance };
         #data{data=V} -> { ok, V }
     end.
 
 write(Key, Element, Db) ->
-    lists:keystore(Key, 1, Db, #data{key=Key, data=Element}).
+    lists:keystore(Key, #data.key, Db, #data{key=Key, data=Element}).
 
 delete(Key, Db) ->
-    lists:keydelete(Key, 2, Db).
+    lists:keydelete(Key, #data.key, Db).
 
 match(Element, Db) ->
-    case lists:keytake(Element, 3, Db) of
-        {value, #data{key=K}, Db2} -> [K | match(Element, Db2)];
-        _ -> []
-    end.
+    [K || #data{key=K, data=V} <- Db, V == Element].
