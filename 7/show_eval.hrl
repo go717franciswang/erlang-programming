@@ -1,0 +1,5 @@
+-ifdef(show).
+    -define(SHOW_EVAL(CALL), io:format("~p = ~p~n", [??CALL, CALL])).
+-else.
+    -define(SHOW_EVAL(CALL), io:format("~p~n", [CALL])).
+-endif.
