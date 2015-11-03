@@ -10,6 +10,7 @@ init(Nodes) ->
         fun(Node) ->
                 spawn_link(Node, my_db, loop, [db:new()])
         end, Nodes),
+    e2:start(Pids),
     loop(Pids).
 
 loop(Pids) ->
@@ -29,13 +30,18 @@ call_db(Message, Pid) ->
     receive {reply, Reply} -> Reply end.
 
 request({insert, K, V}, Pids) ->
-    lists:foreach(fun(Pid) -> call_db({write, K, V}, Pid) end, Pids),
+    lists:foreach(fun(Pid) -> 
+                          call_db({write, K, V}, Pid),
+                          e2:log_insert(Pid, now())
+                  end, Pids),
     ok;
 request({lookup, K}, Pids) ->
     Pid = lists:nth(random:uniform(length(Pids)), Pids),
+    e2:log_lookup(Pid, now()),
     call_db({read, K}, Pid).
 
 stop() ->
+    e2:stop(),
     call(stop).
 
 insert(K, V) ->
