@@ -1,0 +1,4 @@
+{release, {"Simple DB","R1"}, {erts, "5.9.1"},
+    [{kernel,"2.15.1"},
+    {stdlib,"1.18.1"},
+    {db_sup,"1.0"}]}.
