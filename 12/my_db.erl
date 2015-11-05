@@ -1,10 +1,10 @@
 -module(my_db).
--export([start/0, stop/0, write/2, delete/1, read/1, match/1]).
+-export([start_link/0, stop/0, write/2, delete/1, read/1, match/1]).
 -export([handle_call/3, handle_cast/2, init/1, terminate/2]).
 -behavior(gen_server).
 
-start() ->
-    gen_server:start({local, my_db}, ?MODULE, [], []).
+start_link() ->
+    gen_server:start_link({local, my_db}, ?MODULE, [], []).
 
 init(_) ->
     {ok, db:new()}.
