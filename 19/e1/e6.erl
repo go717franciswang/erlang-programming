@@ -1,5 +1,6 @@
 -module(e6).
 -export([quicksort/1, mergesort/1]).
+-include_lib("eunit/include/eunit.hrl").
 
 separate(L, N) -> separate(L, N, [], [], []).
 separate([], _N, L, M, R) -> { L, M, R };
@@ -37,3 +38,8 @@ mergesort(List) ->
     {L, R} = lists:split(trunc(length(List)/2), List),
     merge(mergesort(L), mergesort(R)).
 
+quicksort_test() ->
+    ?assertEqual([1,2,3,4], quicksort([2,4,1,3])).
+
+mergesort_test() ->
+    ?assertEqual([1,2,3,4], mergesort([2,4,1,3])).
